@@ -23,10 +23,22 @@ async function convertPDFToText(file) {
         for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
             const page = await pdfDocument.getPage(pageNum);
             const content = await page.getTextContent();
-            finalText += content.items.map(item => item.str).join(' ') + '\n';
+            const strings = content.items.map(item => item.str);
+
+            // Reassemble the text to consider new lines
+            let lastY = content.items[0].transform[5]; // initial y position
+            for (const item of content.items) {
+                // Check if y position has changed significantly indicating new line
+                if (Math.abs(item.transform[5] - lastY) > 5) {
+                    finalText += '\n';
+                    lastY = item.transform[5];
+                }
+                finalText += item.str + ' ';
+            }
+            finalText += '\n';
         }
 
-        document.getElementById('outputText').value = finalText;
+        document.getElementById('outputText').value = finalText.trim();
     };
 
     reader.readAsArrayBuffer(file);
